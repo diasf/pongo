@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	gl "github.com/chsc/gogl/gl21"
-	"github.com/jteeuwen/glfw"
+	glfw "github.com/go-gl/glfw3"
 	"image"
 	"image/png"
 	"io"
@@ -20,7 +20,7 @@ type GameUpdateHandler interface {
 }
 
 type KeyEventHandler interface {
-	OnKeyEvent(key, state int)
+	OnKeyEvent(key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey)
 }
 
 type Game interface {
@@ -29,9 +29,13 @@ type Game interface {
 
 type BaseGame struct {
 	// width & height of the window
-	Width, Height int
+	width, height int
 	// title to show for the window
-	Title string
+	title string
+	// fixed time at which the GameUpdateHandler will be invoked
+	fixedStep int64
+	// maximum delta between updates
+	maxDelta int64
 	// Handler to build the scene
 	sceneBuilder GameSceneBuilder
 	// Handler to update the game logic
@@ -42,32 +46,52 @@ type BaseGame struct {
 	scene *Scene
 }
 
+func NewBaseGame(width, height int, title string) BaseGame {
+	bg := BaseGame{
+		width:             width,
+		height:            height,
+		title:             title,
+		fixedStep:         100000000,
+		maxDelta:          250000000,
+		sceneBuilder:      nil,
+		gameUpdateHandler: nil,
+		keyEventHandler:   nil,
+		scene:             nil,
+	}
+	return bg
+}
+
 func (g *BaseGame) Start() {
-	if err := glfw.Init(); err != nil {
-		fmt.Fprintf(os.Stderr, "glfw: %s\n", err)
+	if !glfw.Init() {
+		fmt.Fprintf(os.Stderr, "Error initializing glfw\n")
 		return
 	}
 	defer glfw.Terminate()
 
-	glfw.OpenWindowHint(glfw.WindowNoResize, 1)
+	glfw.WindowHint(glfw.Resizable, 0)
+	glfw.WindowHint(glfw.Resizable, 0)
 
-	if err := glfw.OpenWindow(g.Width, g.Height, 0, 0, 0, 0, 16, 0, glfw.Windowed); err != nil {
+	var window * glfw.Window
+	var err error
+	if window, err = glfw.CreateWindow(g.width, g.height, g.title, nil, nil); err != nil {
 		fmt.Fprintf(os.Stderr, "glfw: %s\n", err)
 		return
 	}
-	defer glfw.CloseWindow()
 
-	glfw.SetSwapInterval(1)
-	glfw.SetWindowTitle(g.Title)
+	window.MakeContextCurrent()
+	glfw.SwapInterval(1)
+
 	if g.keyEventHandler != nil {
-		glfw.SetKeyCallback(func(key, state int) { g.keyEventHandler.OnKeyEvent(key, state) })
+		window.SetKeyCallback(func(win *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+			g.keyEventHandler.OnKeyEvent(key, scancode, action, mods)
+		})
 	}
 
 	if err := gl.Init(); err != nil {
 		fmt.Fprintf(os.Stderr, "gl: %s\n", err)
 	}
 
-	g.scene = &Scene{Width: gl.Sizei(g.Width), Height: gl.Sizei(g.Height)}
+	g.scene = &Scene{Width: gl.Sizei(g.width), Height: gl.Sizei(g.height)}
 	if err := g.scene.Init(); err != nil {
 		fmt.Fprintf(os.Stderr, "init: %s\n", err)
 		return
@@ -80,33 +104,28 @@ func (g *BaseGame) Start() {
 
 	timer := NewTimer()
 	accu := int64(0)
-	fixedStep := int64(100000000)
 	cont := true
-	for glfw.WindowParam(glfw.Opened) == 1 && cont {
+	for !window.ShouldClose() && cont {
 
 		delta := timer.Delta().Nanoseconds()
 
-		if delta > 250000000 {
-			delta = 250000000
+		if delta > g.maxDelta {
+			delta = g.maxDelta
 		}
 		accu += delta
 
-		for cont && accu >= fixedStep {
-			accu -= fixedStep
+		for cont && accu >= g.fixedStep {
+			accu -= g.fixedStep
 			if g.gameUpdateHandler != nil {
-				cont = g.gameUpdateHandler.Update(fixedStep)
+				cont = g.gameUpdateHandler.Update(g.fixedStep)
 			}
 		}
 
 		if cont {
-			g.scene.Draw(float64(accu) / float64(fixedStep))
-			glfw.SwapBuffers()
+			g.scene.Draw(float64(accu) / float64(g.fixedStep))
+			window.SwapBuffers()
+			glfw.PollEvents()
 		}
-	}
-
-	// close window if still open
-	if glfw.WindowParam(glfw.Opened) == 1 {
-		glfw.CloseWindow()
 	}
 }
 

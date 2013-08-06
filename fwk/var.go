@@ -21,6 +21,10 @@ type Vector struct {
 	X, Y, Z gl.Float
 }
 
+func (v *Vector) Add(p *Vector) {
+	v.X, v.Y, v.Z = v.X + p.X, v.Y + p.Y, v.Z + p.Z
+}
+
 type Color struct {
 	R, G, B, A gl.Float
 }

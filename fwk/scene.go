@@ -22,7 +22,7 @@ func (s *Scene) Init() (err error) {
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
 
-	s.root = NewNode("Root", Vector{0., 0., -1.})
+	s.root = NewNode(nil, "Root", Vector{0., 0., -1.})
 
 	return
 }

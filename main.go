@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/pongo/game"
+	"github.com/diasf/pongo/game"
 )
 
 func main() {
