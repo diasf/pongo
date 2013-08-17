@@ -2,8 +2,8 @@ package game
 
 import (
 	"fmt"
-	glfw "github.com/go-gl/glfw3"
 	"github.com/diasf/pongo/fwk"
+	glfw "github.com/go-gl/glfw3"
 )
 
 type pongoGame struct {
@@ -23,6 +23,7 @@ func NewPongoGame(width, height int) fwk.Game {
 	pGame.SetGameSceneBuilder(pGame)
 	pGame.SetGameUpdateHandler(pGame)
 	pGame.SetKeyEventHandler(pGame)
+	pGame.GetCollisionDetector().AddCollisionHandler(pGame)
 	fmt.Println("PonGo game created")
 	return pGame
 }
@@ -52,8 +53,15 @@ func (g *pongoGame) BuildGameScene() {
 
 	// player one pad
 	g.playerOne = NewPad(root, "Player1Node", fwk.Vector{-185., 0., 0.}, fwk.Color{1., 0., 0., 1.})
+	g.GetCollisionDetector().AddCollidable(g.playerOne)
 	// player two pad
 	g.playerTwo = NewPad(root, "Player2Node", fwk.Vector{185., 0., 0.}, fwk.Color{0., 0., 1., 1.})
+	g.GetCollisionDetector().AddCollidable(g.playerTwo)
 	// the ring
 	g.arena = NewArena(root, 400, 5, fwk.Color{.5, .5, .1, 1})
+	g.GetCollisionDetector().AddCollidable(g.arena)
+}
+
+func (g *pongoGame) HandleCollision(one, two fwk.Collidable) {
+	fmt.Println("Collision between", one, " and ", two)
 }

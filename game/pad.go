@@ -24,9 +24,9 @@ func (p *Pad) SetDirection(dir int) {
 func (p *Pad) Move(timeInNano int64) {
 	x := gl.Float(p.speed * float32(timeInNano/100000000))
 	if p.direction == MOVING_DOWN {
-		p.node.Move(&fwk.Vector{0,-x,0})
+		p.node.Move(&fwk.Vector{0, -x, 0})
 	} else if p.direction == MOVING_UP {
-		p.node.Move(&fwk.Vector{0,x,0})
+		p.node.Move(&fwk.Vector{0, x, 0})
 	}
 }
 
@@ -40,4 +40,8 @@ func NewPad(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color)
 	pad.direction = MOVING_STOP
 	pad.speed = 2.
 	return pad
+}
+
+func (p *Pad) GetBoundingVolume() fwk.BoundingVolume {
+	return nil
 }

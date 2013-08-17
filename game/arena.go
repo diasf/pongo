@@ -23,3 +23,7 @@ func NewArena(parent *fwk.Node, ringsize float32, wallwidth float32, color fwk.C
 	arena.bottom = fwk.NewNode(parent, "BottomBorderN", fwk.Vector{0., -halfring + gl.Float(wallwidth/2.), 0.}).AddDrawable(bar)
 	return arena
 }
+
+func (a *Arena) GetBoundingVolume() fwk.BoundingVolume {
+	return nil
+}

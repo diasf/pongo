@@ -6,12 +6,12 @@ import (
 )
 
 type Node struct {
-	Parent *Node
-	name     string
-	position Vector
-	rotationAxe Vector
+	Parent        *Node
+	name          string
+	position      Vector
+	rotationAxe   Vector
 	rotationAngle gl.Float
-	children []NamedDrawable
+	children      []NamedDrawable
 }
 
 func (n *Node) Draw(ratio float64) {
@@ -26,12 +26,12 @@ func (n *Node) Draw(ratio float64) {
 	gl.PopMatrix()
 }
 
-func (n *Node) Move(trans * Vector) {
+func (n *Node) Move(trans *Vector) {
 	n.position.Add(trans)
 }
 
 func (n *Node) Rotate(deg float32, up Vector) {
-	println("setting rotation angle to:", deg * (math.Pi / 180.), " : ", math.Pi)
+	println("setting rotation angle to:", deg*(math.Pi/180.), " : ", math.Pi)
 	n.rotationAngle = gl.Float(deg)
 	n.rotationAxe = up
 }

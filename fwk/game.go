@@ -28,22 +28,15 @@ type Game interface {
 }
 
 type BaseGame struct {
-	// width & height of the window
-	width, height int
-	// title to show for the window
-	title string
-	// fixed time at which the GameUpdateHandler will be invoked
-	fixedStep int64
-	// maximum delta between updates
-	maxDelta int64
-	// Handler to build the scene
-	sceneBuilder GameSceneBuilder
-	// Handler to update the game logic
-	gameUpdateHandler GameUpdateHandler
-	// Handler to handle key events
-	keyEventHandler KeyEventHandler
-	// the scene object
-	scene *Scene
+	width, height     int               // width & height of the window
+	title             string            // title to show for the window
+	fixedStep         int64             // fixed time at which the GameUpdateHandler will be invoked
+	maxDelta          int64             // maximum delta between updates
+	sceneBuilder      GameSceneBuilder  // Handler to build the scene
+	gameUpdateHandler GameUpdateHandler // Handler to update the game logic
+	keyEventHandler   KeyEventHandler   // Handler to handle key events
+	collisionDetector CollisionDetector // Used for checking collisions
+	scene             *Scene            // the scene object
 }
 
 func NewBaseGame(width, height int, title string) BaseGame {
@@ -56,6 +49,7 @@ func NewBaseGame(width, height int, title string) BaseGame {
 		sceneBuilder:      nil,
 		gameUpdateHandler: nil,
 		keyEventHandler:   nil,
+		collisionDetector: NewSimpleCollisionDetector(),
 		scene:             nil,
 	}
 	return bg
@@ -71,7 +65,7 @@ func (g *BaseGame) Start() {
 	glfw.WindowHint(glfw.Resizable, 0)
 	glfw.WindowHint(glfw.Resizable, 0)
 
-	var window * glfw.Window
+	var window *glfw.Window
 	var err error
 	if window, err = glfw.CreateWindow(g.width, g.height, g.title, nil, nil); err != nil {
 		fmt.Fprintf(os.Stderr, "glfw: %s\n", err)
@@ -131,6 +125,10 @@ func (g *BaseGame) Start() {
 
 func (g *BaseGame) GetScene() *Scene {
 	return g.scene
+}
+
+func (g *BaseGame) GetCollisionDetector() CollisionDetector {
+	return g.collisionDetector
 }
 
 func (g *BaseGame) SetGameSceneBuilder(handler GameSceneBuilder) {
