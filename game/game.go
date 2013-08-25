@@ -52,16 +52,18 @@ func (g *pongoGame) BuildGameScene() {
 	root := g.GetScene().GetRoot()
 
 	// player one pad
-	g.playerOne = NewPad(root, "Player1Node", fwk.Vector{-185., 0., 0.}, fwk.Color{1., 0., 0., 1.})
+	g.playerOne = NewPad(root, "Player1Node", fwk.Vector{-185., 0., 0.}, fwk.Color{1., 0., 0., 1.}, 1.)
 	g.GetCollisionDetector().AddCollidable(g.playerOne)
 	// player two pad
-	g.playerTwo = NewPad(root, "Player2Node", fwk.Vector{185., 0., 0.}, fwk.Color{0., 0., 1., 1.})
+	g.playerTwo = NewPad(root, "Player2Node", fwk.Vector{185., 0., 0.}, fwk.Color{0., 0., 1., 1.}, 0.5)
 	g.GetCollisionDetector().AddCollidable(g.playerTwo)
 	// the ring
-	g.arena = NewArena(root, 400, 5, fwk.Color{.5, .5, .1, 1})
+	g.arena = NewArena(root, "Arena", 400, 5, fwk.Color{.5, .5, .1, 1})
 	g.GetCollisionDetector().AddCollidable(g.arena)
 }
 
 func (g *pongoGame) HandleCollision(one, two fwk.Collidable) {
-	fmt.Println("Collision between", one, " and ", two)
+	if pad, ok := one.(*Pad); ok && two == g.arena {
+		pad.SetDirection(MOVING_STOP)
+	}
 }

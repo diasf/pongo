@@ -99,6 +99,7 @@ func (g *BaseGame) Start() {
 	timer := NewTimer()
 	accu := int64(0)
 	cont := true
+	ratio := float64(0)
 	for !window.ShouldClose() && cont {
 
 		delta := timer.Delta().Nanoseconds()
@@ -116,7 +117,9 @@ func (g *BaseGame) Start() {
 		}
 
 		if cont {
-			g.scene.Draw(float64(accu) / float64(g.fixedStep))
+			ratio = float64(accu) / float64(g.fixedStep)
+			g.GetCollisionDetector().Check()
+			g.scene.Draw(ratio)
 			window.SwapBuffers()
 			glfw.PollEvents()
 		}

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	gl "github.com/chsc/gogl/gl21"
 	"github.com/diasf/pongo/fwk"
 )
@@ -12,9 +13,13 @@ const (
 )
 
 type Pad struct {
-	node      *fwk.Node
-	direction int
-	speed     float32
+	node       *fwk.Node
+	direction  int
+	speed      float32
+	width      gl.Float
+	widthHalf  gl.Float
+	height     gl.Float
+	heightHalf gl.Float
 }
 
 func (p *Pad) SetDirection(dir int) {
@@ -34,14 +39,27 @@ func (p *Pad) Rotate(deg float32, up fwk.Vector) {
 	p.node.Rotate(deg, up)
 }
 
-func NewPad(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color) *Pad {
+func NewPad(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color, speed float32) *Pad {
 	pad := &Pad{}
-	pad.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{10, 100, color, "Rect"})
+	pad.width = 10
+	pad.widthHalf = pad.width / 2.
+	pad.height = 100
+	pad.heightHalf = pad.height / 2.
+	pad.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{pad.width, pad.height, color, "Rect"})
 	pad.direction = MOVING_STOP
-	pad.speed = 2.
+	pad.speed = speed
+
+	box, _ := pad.GetBoundingVolumes()[0].(*fwk.BoundingBox)
+	fmt.Println(name, ": ", box)
+
 	return pad
 }
 
-func (p *Pad) GetBoundingVolume() fwk.BoundingVolume {
-	return nil
+func (p *Pad) GetBoundingVolumes() []fwk.BoundingVolume {
+	pos := p.node.GetPosition()
+	return []fwk.BoundingVolume{&fwk.BoundingBox{Left: pos.X - p.widthHalf, Right: pos.X + p.widthHalf, Top: pos.Y + p.heightHalf, Bottom: pos.Y - p.heightHalf}}
+}
+
+func (n *Pad) GetName() string {
+	return n.node.GetName()
 }

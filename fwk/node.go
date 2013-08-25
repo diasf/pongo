@@ -40,6 +40,10 @@ func (n *Node) GetName() string {
 	return n.name
 }
 
+func (n *Node) GetPosition() *Vector {
+	return &n.position
+}
+
 func (n *Node) AddDrawable(d NamedDrawable) (rs *Node) {
 	n.children = append(n.children, d)
 	return n

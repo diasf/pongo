@@ -17,17 +17,21 @@ type SimpleCollisionDetector struct {
 
 func NewSimpleCollisionDetector() *SimpleCollisionDetector {
 	c := &SimpleCollisionDetector{}
-	c.handlers = make([]CollisionHandler, 5)
-	c.items = make([]Collidable, 5)
+	c.handlers = make([]CollisionHandler, 0)
+	c.items = make([]Collidable, 0)
 	return c
 }
 
 func (n *SimpleCollisionDetector) Check() {
 	li := len(n.items)
-	for i := 0; i < li; i++ {
+	for i, itemL := range n.items {
 		for j := i + 1; j < li; j++ {
-			if n.items[i].GetBoundingVolume().CollidesWith(n.items[j].GetBoundingVolume()) {
-				n.notifyCollision(n.items[i], n.items[j])
+			for _, bv := range itemL.GetBoundingVolumes() {
+				for _, rbv := range n.items[j].GetBoundingVolumes() {
+					if bv.CollidesWith(rbv) {
+						n.notifyCollision(itemL, n.items[j])
+					}
+				}
 			}
 		}
 	}
@@ -57,24 +61,25 @@ type CollisionHandler interface {
 }
 
 type Collidable interface {
-	GetBoundingVolume() BoundingVolume
+	Named
+	GetBoundingVolumes() []BoundingVolume
 }
 
 // Bounding Box -----------------------------------------------
 
 type BoundingBox struct {
-	left, right, top, bottom gl.Float
+	Left, Right, Top, Bottom gl.Float
 }
 
 func (v *BoundingBox) CollidesWith(other BoundingVolume) bool {
 	if obx, ok := other.(*BoundingBox); ok {
-		if (v.left <= obx.right && v.right >= obx.left) || (v.right >= obx.left && v.left <= obx.right) {
-			if (v.top >= obx.bottom && v.bottom <= obx.top) || (v.bottom <= obx.top && v.top >= obx.bottom) {
+		if (v.Left <= obx.Right && v.Right >= obx.Left) || (v.Right >= obx.Left && v.Left <= obx.Right) {
+			if (v.Top >= obx.Bottom && v.Bottom <= obx.Top) || (v.Bottom <= obx.Top && v.Top >= obx.Bottom) {
 				return true
 			}
 		}
 	} else {
-		if v.inVolume(other.GetNearestTo(&Vector{v.left, v.bottom, 0})) || v.inVolume(other.GetNearestTo(&Vector{v.left, v.top, 0})) || v.inVolume(other.GetNearestTo(&Vector{v.left, v.top, 0})) || v.inVolume(other.GetNearestTo(&Vector{v.left, v.top, 0})) {
+		if v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Bottom, 0})) || v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Top, 0})) || v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Top, 0})) || v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Top, 0})) {
 			return true
 		}
 	}
@@ -86,7 +91,7 @@ func (v *BoundingBox) GetNearestTo(p *Vector) *Vector {
 }
 
 func (v *BoundingBox) inVolume(p *Vector) bool {
-	return (v.left <= p.X && v.right >= p.X) && (v.bottom <= p.Y && v.top >= p.Y)
+	return (v.Left <= p.X && v.Right >= p.X) && (v.Bottom <= p.Y && v.Top >= p.Y)
 }
 
 // Bounding Sphere -----------------------------------------------
