@@ -29,7 +29,7 @@ func (n *SimpleCollisionDetector) Check() {
 			for _, bv := range itemL.GetBoundingVolumes() {
 				for _, rbv := range n.items[j].GetBoundingVolumes() {
 					if bv.CollidesWith(rbv) {
-						n.notifyCollision(itemL, n.items[j])
+						n.notifyCollision(newCollisionObject(itemL, bv), newCollisionObject(n.items[j], rbv))
 					}
 				}
 			}
@@ -37,7 +37,7 @@ func (n *SimpleCollisionDetector) Check() {
 	}
 }
 
-func (n *SimpleCollisionDetector) notifyCollision(one, two Collidable) {
+func (n *SimpleCollisionDetector) notifyCollision(one, two CollisionObject) {
 	for _, h := range n.handlers {
 		h.HandleCollision(one, two)
 	}
@@ -57,12 +57,29 @@ type BoundingVolume interface {
 }
 
 type CollisionHandler interface {
-	HandleCollision(one, two Collidable)
+	HandleCollision(one, two CollisionObject)
 }
 
 type Collidable interface {
 	Named
 	GetBoundingVolumes() []BoundingVolume
+}
+
+type CollisionObject struct {
+	object         Collidable
+	boundingVolume BoundingVolume
+}
+
+func (c CollisionObject) GetObject() Collidable {
+	return c.object
+}
+
+func (c CollisionObject) GetBoundingVolume() BoundingVolume {
+	return c.boundingVolume
+}
+
+func newCollisionObject(obj Collidable, bv BoundingVolume) CollisionObject {
+	return CollisionObject{obj, bv}
 }
 
 // Bounding Box -----------------------------------------------
@@ -79,7 +96,10 @@ func (v *BoundingBox) CollidesWith(other BoundingVolume) bool {
 			}
 		}
 	} else {
-		if v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Bottom, 0})) || v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Top, 0})) || v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Top, 0})) || v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Top, 0})) {
+		if v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Bottom, 0})) ||
+			v.inVolume(other.GetNearestTo(&Vector{v.Left, v.Top, 0})) ||
+			v.inVolume(other.GetNearestTo(&Vector{v.Right, v.Bottom, 0})) ||
+			v.inVolume(other.GetNearestTo(&Vector{v.Right, v.Top, 0})) {
 			return true
 		}
 	}
@@ -87,7 +107,10 @@ func (v *BoundingBox) CollidesWith(other BoundingVolume) bool {
 }
 
 func (v *BoundingBox) GetNearestTo(p *Vector) *Vector {
-	return nil
+	min := Vector{v.Left, v.Bottom, 0}
+	max := Vector{v.Right, v.Top, 0}
+	nearest := p.Clamp(min, max)
+	return &nearest
 }
 
 func (v *BoundingBox) inVolume(p *Vector) bool {

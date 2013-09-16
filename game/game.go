@@ -4,14 +4,16 @@ import (
 	"fmt"
 	"github.com/diasf/pongo/fwk"
 	glfw "github.com/go-gl/glfw3"
+	"time"
 )
 
 type pongoGame struct {
 	fwk.BaseGame
-	playerOne *Pad
-	playerTwo *Pad
-	arena     *Arena
-	quit      bool
+	playerOne    *Pad
+	playerTwo    *Pad
+	arena        *Arena
+	quit         bool
+	reactionTime time.Duration
 }
 
 func NewPongoGame(width, height int) fwk.Game {
@@ -19,6 +21,7 @@ func NewPongoGame(width, height int) fwk.Game {
 	// initialize base game..
 	pGame.BaseGame = fwk.NewBaseGame(width, height, "PonGo")
 	pGame.quit = false
+	pGame.reactionTime = time.Duration(100) * time.Millisecond
 	// register handlers
 	pGame.SetGameSceneBuilder(pGame)
 	pGame.SetGameUpdateHandler(pGame)
@@ -31,16 +34,47 @@ func NewPongoGame(width, height int) fwk.Game {
 func (g *pongoGame) Update(timeInNano int64) bool {
 	if !g.quit {
 		g.playerOne.Move(timeInNano)
+		g.computerPlayerTwo()
 		g.playerTwo.Move(timeInNano)
 	}
 	return !g.quit
 }
 
+func (g *pongoGame) computerPlayerTwo() {
+	p := g.playerTwo
+	if p.IsDirectionLockedOn(MOVING_DOWN) {
+		p.SetDirection(MOVING_UP)
+	} else if p.IsDirectionLockedOn(MOVING_UP) {
+		p.SetDirection(MOVING_DOWN)
+	} else {
+		if g.playerOne.GetDirection() != MOVING_STOP {
+			if p.GetDirection() != g.playerOne.GetDirection() && time.Now().After(g.playerOne.GetLastDirectionUpdate().Add(g.reactionTime)) {
+				if p.GetDirection() == MOVING_UP {
+					p.SetDirection(MOVING_DOWN)
+				} else {
+					p.SetDirection(MOVING_UP)
+				}
+			}
+		} else {
+			diff := p.GetTop() - g.playerOne.GetTop()
+			if diff > 0 && (p.GetDirection() == MOVING_UP || p.GetDirection() == MOVING_STOP) {
+				p.SetDirection(MOVING_DOWN)
+			} else if diff < 0 && (p.GetDirection() == MOVING_DOWN || p.GetDirection() == MOVING_STOP) {
+				p.SetDirection(MOVING_UP)
+			}
+		}
+	}
+}
+
 func (g *pongoGame) OnKeyEvent(key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	if action == glfw.Press && key == glfw.KeyUp {
-		g.playerOne.SetDirection(MOVING_UP)
+		if !g.playerOne.IsDirectionLockedOn(MOVING_UP) {
+			g.playerOne.SetDirection(MOVING_UP)
+		}
 	} else if action == glfw.Press && key == glfw.KeyDown {
-		g.playerOne.SetDirection(MOVING_DOWN)
+		if !g.playerOne.IsDirectionLockedOn(MOVING_DOWN) {
+			g.playerOne.SetDirection(MOVING_DOWN)
+		}
 	} else if action == glfw.Release && (key == glfw.KeyUp || key == glfw.KeyDown) {
 		g.playerOne.SetDirection(MOVING_STOP)
 	} else if action == glfw.Press && key == glfw.KeyEscape {
@@ -62,8 +96,16 @@ func (g *pongoGame) BuildGameScene() {
 	g.GetCollisionDetector().AddCollidable(g.arena)
 }
 
-func (g *pongoGame) HandleCollision(one, two fwk.Collidable) {
-	if pad, ok := one.(*Pad); ok && two == g.arena {
-		pad.SetDirection(MOVING_STOP)
+func (g *pongoGame) HandleCollision(one, two fwk.CollisionObject) {
+	if pad, ok := one.GetObject().(*Pad); ok && two.GetObject() == g.arena {
+		if !pad.IsDirectionLocked() {
+			pad.SetDirection(MOVING_STOP)
+			if g.arena.GetTopBoundingVolume().CollidesWith(one.GetBoundingVolume()) {
+				pad.LockDirection(MOVING_UP)
+			} else {
+				pad.LockDirection(MOVING_DOWN)
+			}
+		}
+
 	}
 }

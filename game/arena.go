@@ -1,7 +1,6 @@
 package game
 
 import (
-	"fmt"
 	gl "github.com/chsc/gogl/gl21"
 	"github.com/diasf/pongo/fwk"
 )
@@ -31,7 +30,6 @@ func NewArena(parent *fwk.Node, name string, ringsize float32, wallwidth float32
 	topPos := fwk.Vector{0., arena.halfring - arena.halfwallwidth, 0.}
 	arena.top = fwk.NewNode(parent, "TopBorderN", topPos).AddDrawable(bar)
 	topBox := &fwk.BoundingBox{Left: topPos.X - arena.halfring, Right: topPos.X + arena.halfring, Top: topPos.Y + arena.halfwallwidth, Bottom: topPos.Y - arena.halfwallwidth}
-	fmt.Println("Arena TopBox:", topBox)
 
 	// bottom
 	bottomPos := fwk.Vector{0., -arena.halfring + arena.halfwallwidth, 0.}
@@ -48,4 +46,12 @@ func (a *Arena) GetBoundingVolumes() []fwk.BoundingVolume {
 
 func (a *Arena) GetName() string {
 	return a.name
+}
+
+func (a *Arena) GetTopBoundingVolume() fwk.BoundingVolume {
+	return a.volumes[0]
+}
+
+func (a *Arena) GetBottomBoundingVolume() fwk.BoundingVolume {
+	return a.volumes[1]
 }

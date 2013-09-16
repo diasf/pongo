@@ -58,3 +58,19 @@ func (v Vector) Normalization() (normalized *Vector) {
 	normalized.X, normalized.Y, normalized.Z = v.X/length, v.Y/length, v.Z/length
 	return
 }
+
+func (v Vector) Clamp(min, max Vector) (p Vector) {
+	p.X = clamp(v.X, min.X, max.X)
+	p.Y = clamp(v.Y, min.Y, max.Y)
+	p.Z = clamp(v.Z, min.Z, max.Z)
+	return p
+}
+
+func clamp(a, min, max gl.Float) gl.Float {
+	if a < min {
+		return min
+	} else if a > max {
+		return max
+	}
+	return a
+}
