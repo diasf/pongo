@@ -11,6 +11,7 @@ type pongoGame struct {
 	fwk.BaseGame
 	playerOne    *Pad
 	playerTwo    *Pad
+	ball         *Ball
 	arena        *Arena
 	quit         bool
 	reactionTime time.Duration
@@ -33,6 +34,7 @@ func NewPongoGame(width, height int) fwk.Game {
 
 func (g *pongoGame) Update(timeInNano int64) bool {
 	if !g.quit {
+		g.ball.Move(timeInNano)
 		g.playerOne.Move(timeInNano)
 		g.computerPlayerTwo()
 		g.playerTwo.Move(timeInNano)
@@ -85,6 +87,9 @@ func (g *pongoGame) OnKeyEvent(key glfw.Key, scancode int, action glfw.Action, m
 func (g *pongoGame) BuildGameScene() {
 	root := g.GetScene().GetRoot()
 
+	// ball
+	g.ball = NewBall(root, "BallNode", fwk.Vector{0., 0., 0.}, fwk.Color{0., 1., 0., 1.}, 1)
+	g.GetCollisionDetector().AddCollidable(g.ball)
 	// player one pad
 	g.playerOne = NewPad(root, "Player1Node", fwk.Vector{-185., 0., 0.}, fwk.Color{1., 0., 0., 1.}, 1.)
 	g.GetCollisionDetector().AddCollidable(g.playerOne)
@@ -106,6 +111,9 @@ func (g *pongoGame) HandleCollision(one, two fwk.CollisionObject) {
 				pad.LockDirection(MOVING_DOWN)
 			}
 		}
-
+	} else if ball, ok := one.GetObject().(*Ball); ok {
+		ball.HandleCollision(one, two)
+	} else if ball, ok := two.GetObject().(*Ball); ok {
+		ball.HandleCollision(two, one)
 	}
 }
