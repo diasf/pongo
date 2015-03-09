@@ -3,12 +3,14 @@ package fwk
 import (
 	"errors"
 	"fmt"
-	gl "github.com/chsc/gogl/gl21"
-	glfw "github.com/go-gl/glfw3"
 	"image"
 	"image/png"
 	"io"
 	"os"
+	"time"
+
+	gl "github.com/chsc/gogl/gl21"
+	glfw "github.com/go-gl/glfw3"
 )
 
 type GameSceneBuilder interface {
@@ -16,7 +18,7 @@ type GameSceneBuilder interface {
 }
 
 type GameUpdateHandler interface {
-	Update(timeInNano int64) bool
+	Update(duration time.Duration) bool
 }
 
 type KeyEventHandler interface {
@@ -30,13 +32,14 @@ type Game interface {
 type BaseGame struct {
 	width, height     int               // width & height of the window
 	title             string            // title to show for the window
-	fixedStep         int64             // fixed time at which the GameUpdateHandler will be invoked
-	maxDelta          int64             // maximum delta between updates
+	fixedStep         time.Duration     // fixed time at which the GameUpdateHandler will be invoked
+	maxDelta          time.Duration     // maximum delta between updates
 	sceneBuilder      GameSceneBuilder  // Handler to build the scene
 	gameUpdateHandler GameUpdateHandler // Handler to update the game logic
 	keyEventHandler   KeyEventHandler   // Handler to handle key events
 	collisionDetector CollisionDetector // Used for checking collisions
 	scene             *Scene            // the scene object
+	window            *glfw.Window
 }
 
 func NewBaseGame(width, height int, title string) BaseGame {
@@ -44,8 +47,8 @@ func NewBaseGame(width, height int, title string) BaseGame {
 		width:             width,
 		height:            height,
 		title:             title,
-		fixedStep:         100000000,
-		maxDelta:          250000000,
+		fixedStep:         time.Duration(100 * time.Millisecond),
+		maxDelta:          time.Duration(250 * time.Millisecond),
 		sceneBuilder:      nil,
 		gameUpdateHandler: nil,
 		keyEventHandler:   nil,
@@ -65,18 +68,17 @@ func (g *BaseGame) Start() {
 	glfw.WindowHint(glfw.Resizable, 0)
 	glfw.WindowHint(glfw.Resizable, 0)
 
-	var window *glfw.Window
 	var err error
-	if window, err = glfw.CreateWindow(g.width, g.height, g.title, nil, nil); err != nil {
+	if g.window, err = glfw.CreateWindow(g.width, g.height, g.title, nil, nil); err != nil {
 		fmt.Fprintf(os.Stderr, "glfw: %s\n", err)
 		return
 	}
 
-	window.MakeContextCurrent()
+	g.window.MakeContextCurrent()
 	glfw.SwapInterval(1)
 
 	if g.keyEventHandler != nil {
-		window.SetKeyCallback(func(win *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		g.window.SetKeyCallback(func(win *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 			g.keyEventHandler.OnKeyEvent(key, scancode, action, mods)
 		})
 	}
@@ -96,13 +98,17 @@ func (g *BaseGame) Start() {
 		g.sceneBuilder.BuildGameScene()
 	}
 
+	g.gameLoop()
+}
+
+func (g *BaseGame) gameLoop() {
 	timer := NewTimer()
-	accu := int64(0)
+	accu := time.Duration(0)
 	cont := true
 	ratio := float64(0)
-	for !window.ShouldClose() && cont {
+	for !g.window.ShouldClose() && cont {
 
-		delta := timer.Delta().Nanoseconds()
+		delta := timer.Delta()
 
 		if delta > g.maxDelta {
 			delta = g.maxDelta
@@ -117,10 +123,10 @@ func (g *BaseGame) Start() {
 		}
 
 		if cont {
-			ratio = float64(accu) / float64(g.fixedStep)
+			ratio = accu.Seconds() / g.fixedStep.Seconds()
 			g.GetCollisionDetector().Check()
 			g.scene.Draw(ratio)
-			window.SwapBuffers()
+			g.window.SwapBuffers()
 			glfw.PollEvents()
 		}
 	}

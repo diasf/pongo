@@ -1,8 +1,9 @@
 package fwk
 
 import (
-	gl "github.com/chsc/gogl/gl21"
 	"math"
+
+	gl "github.com/chsc/gogl/gl21"
 )
 
 type Vector struct {
@@ -14,9 +15,8 @@ func (v *Vector) Add(p *Vector) *Vector {
 	return v
 }
 
-func (v Vector) Addition(p *Vector) (addition *Vector) {
-	addition.X, addition.Y, addition.Z = v.X+p.X, v.Y+p.Y, v.Z+p.Z
-	return
+func (v Vector) Addition(p *Vector) *Vector {
+	return &Vector{X: v.X + p.X, Y: v.Y + p.Y, Z: v.Z + p.Z}
 }
 
 func (v *Vector) Substract(p *Vector) *Vector {
@@ -24,9 +24,8 @@ func (v *Vector) Substract(p *Vector) *Vector {
 	return v
 }
 
-func (v Vector) Substraction(p *Vector) (substraction *Vector) {
-	substraction.X, substraction.Y, substraction.Z = v.X-p.X, v.Y-p.Y, v.Z-p.Z
-	return
+func (v Vector) Substraction(p *Vector) *Vector {
+	return &Vector{X: v.X - p.X, Y: v.Y - p.Y, Z: v.Z - p.Z}
 }
 
 func (v *Vector) Mult(sc gl.Float) *Vector {
@@ -34,9 +33,8 @@ func (v *Vector) Mult(sc gl.Float) *Vector {
 	return v
 }
 
-func (v *Vector) Multiplication(sc gl.Float) (multiplication *Vector) {
-	multiplication.X, multiplication.Y, multiplication.Z = v.X*sc, v.Y*sc, v.Z*sc
-	return multiplication
+func (v *Vector) Multiplication(sc gl.Float) *Vector {
+	return &Vector{X: v.X * sc, Y: v.Y * sc, Z: v.Z * sc}
 }
 
 func (v *Vector) Dot(p *Vector) float64 {
@@ -53,10 +51,9 @@ func (v *Vector) Normalize() *Vector {
 	return v
 }
 
-func (v Vector) Normalization() (normalized *Vector) {
+func (v Vector) Normalization() *Vector {
 	length := gl.Float(v.Length())
-	normalized.X, normalized.Y, normalized.Z = v.X/length, v.Y/length, v.Z/length
-	return
+	return &Vector{X: v.X / length, Y: v.Y / length, Z: v.Z / length}
 }
 
 func (v Vector) Clamp(min, max Vector) (p Vector) {

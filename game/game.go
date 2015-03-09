@@ -2,9 +2,10 @@ package game
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/diasf/pongo/fwk"
 	glfw "github.com/go-gl/glfw3"
-	"time"
 )
 
 type pongoGame struct {
@@ -32,39 +33,28 @@ func NewPongoGame(width, height int) fwk.Game {
 	return pGame
 }
 
-func (g *pongoGame) Update(timeInNano int64) bool {
+func (g *pongoGame) Update(duration time.Duration) bool {
 	if !g.quit {
-		g.ball.Move(timeInNano)
-		g.playerOne.Move(timeInNano)
+		g.ball.Move(duration)
+		g.playerOne.Move(duration)
 		g.computerPlayerTwo()
-		g.playerTwo.Move(timeInNano)
+		g.playerTwo.Move(duration)
 	}
 	return !g.quit
 }
 
 func (g *pongoGame) computerPlayerTwo() {
+	if !time.Now().After(g.ball.directionUpdate.Add(g.reactionTime)) {
+		return
+	}
 	p := g.playerTwo
-	if p.IsDirectionLockedOn(MOVING_DOWN) {
-		p.SetDirection(MOVING_UP)
-	} else if p.IsDirectionLockedOn(MOVING_UP) {
-		p.SetDirection(MOVING_DOWN)
-	} else {
-		if g.playerOne.GetDirection() != MOVING_STOP {
-			if p.GetDirection() != g.playerOne.GetDirection() && time.Now().After(g.playerOne.GetLastDirectionUpdate().Add(g.reactionTime)) {
-				if p.GetDirection() == MOVING_UP {
-					p.SetDirection(MOVING_DOWN)
-				} else {
-					p.SetDirection(MOVING_UP)
-				}
-			}
-		} else {
-			diff := p.GetTop() - g.playerOne.GetTop()
-			if diff > 0 && (p.GetDirection() == MOVING_UP || p.GetDirection() == MOVING_STOP) {
-				p.SetDirection(MOVING_DOWN)
-			} else if diff < 0 && (p.GetDirection() == MOVING_DOWN || p.GetDirection() == MOVING_STOP) {
-				p.SetDirection(MOVING_UP)
-			}
+	myPos := p.node.GetPosition().Y
+	if myPos < g.ball.node.GetPosition().Y {
+		if !p.IsDirectionLockedOn(MOVING_UP) {
+			p.SetDirection(MOVING_UP)
 		}
+	} else if !p.IsDirectionLockedOn(MOVING_DOWN) {
+		p.SetDirection(MOVING_DOWN)
 	}
 }
 
@@ -88,13 +78,13 @@ func (g *pongoGame) BuildGameScene() {
 	root := g.GetScene().GetRoot()
 
 	// ball
-	g.ball = NewBall(root, "BallNode", fwk.Vector{0., 0., 0.}, fwk.Color{0., 1., 0., 1.}, 1)
+	g.ball = NewBall(root, "BallNode", fwk.Vector{0., 0., 0.}, fwk.Color{0., 1., 0., 1.}, 3.5)
 	g.GetCollisionDetector().AddCollidable(g.ball)
 	// player one pad
-	g.playerOne = NewPad(root, "Player1Node", fwk.Vector{-185., 0., 0.}, fwk.Color{1., 0., 0., 1.}, 1.)
+	g.playerOne = NewPad(root, "Player1Node", fwk.Vector{-185., 0., 0.}, fwk.Color{1., 0., 0., 1.}, 5.)
 	g.GetCollisionDetector().AddCollidable(g.playerOne)
 	// player two pad
-	g.playerTwo = NewPad(root, "Player2Node", fwk.Vector{185., 0., 0.}, fwk.Color{0., 0., 1., 1.}, 0.5)
+	g.playerTwo = NewPad(root, "Player2Node", fwk.Vector{185., 0., 0.}, fwk.Color{0., 0., 1., 1.}, 5.)
 	g.GetCollisionDetector().AddCollidable(g.playerTwo)
 	// the ring
 	g.arena = NewArena(root, "Arena", 400, 5, fwk.Color{.5, .5, .1, 1})
@@ -112,8 +102,27 @@ func (g *pongoGame) HandleCollision(one, two fwk.CollisionObject) {
 			}
 		}
 	} else if ball, ok := one.GetObject().(*Ball); ok {
-		ball.HandleCollision(one, two)
+		ball.HandleCollision(g.getBallHit(two))
 	} else if ball, ok := two.GetObject().(*Ball); ok {
-		ball.HandleCollision(two, one)
+		ball.HandleCollision(g.getBallHit(one))
 	}
+}
+
+func (g *pongoGame) getBallHit(col fwk.CollisionObject) (x, y int) {
+	if pad, ok := col.GetObject().(*Pad); ok {
+		if pad == g.playerOne {
+			x = 1
+		} else {
+			x = -1
+		}
+	} else {
+		nearest := col.GetBoundingVolume().GetNearestTo(g.ball.node.GetPosition())
+		if nearest.Y > 10 {
+			y = -1
+		} else {
+			y = 1
+		}
+	}
+
+	return
 }

@@ -1,9 +1,10 @@
 package game
 
 import (
+	"time"
+
 	gl "github.com/chsc/gogl/gl21"
 	"github.com/diasf/pongo/fwk"
-	"time"
 )
 
 const (
@@ -15,7 +16,6 @@ const (
 type Pad struct {
 	node            *fwk.Node
 	direction       int
-	directionUpdate time.Time
 	lockedDirection int
 	speed           float32
 	width           gl.Float
@@ -26,15 +26,10 @@ type Pad struct {
 
 func (p *Pad) SetDirection(dir int) {
 	p.direction = dir
-	p.directionUpdate = time.Now()
 }
 
 func (p *Pad) GetDirection() int {
 	return p.direction
-}
-
-func (p *Pad) GetLastDirectionUpdate() time.Time {
-	return p.directionUpdate
 }
 
 func (p *Pad) UnLockDirection() {
@@ -53,8 +48,8 @@ func (p *Pad) IsDirectionLockedOn(dir int) bool {
 	return p.lockedDirection == dir
 }
 
-func (p *Pad) Move(timeInNano int64) {
-	x := gl.Float(p.speed * float32(timeInNano/100000000))
+func (p *Pad) Move(duration time.Duration) {
+	x := gl.Float(p.speed * float32(duration.Seconds()))
 	if p.direction == MOVING_DOWN && !p.IsDirectionLockedOn(MOVING_DOWN) {
 		p.node.Move(&fwk.Vector{0, -x, 0})
 		p.UnLockDirection()

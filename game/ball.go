@@ -1,9 +1,10 @@
 package game
 
 import (
+	"time"
+
 	gl "github.com/chsc/gogl/gl21"
 	"github.com/diasf/pongo/fwk"
-	"time"
 )
 
 type Ball struct {
@@ -14,9 +15,8 @@ type Ball struct {
 	size            gl.Float
 }
 
-func (b *Ball) Move(timeInNano int64) {
-	x := gl.Float(b.speed * float32(timeInNano/100000000))
-	b.node.Move(b.direction.Mult(x))
+func (b *Ball) Move(duration time.Duration) {
+	b.node.Move(b.direction.Multiplication(gl.Float(b.speed * float32(duration.Seconds()))))
 }
 
 func NewBall(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color, speed float32) *Ball {
@@ -25,6 +25,7 @@ func NewBall(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color
 	ball.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{ball.size, ball.size, color, "Ball"})
 	ball.direction = fwk.Vector{-1, 1, 0}
 	ball.speed = speed
+	go ball.speedIncrement(time.NewTicker(time.Duration(time.Second * 10)))
 	return ball
 }
 
@@ -38,19 +39,24 @@ func (b *Ball) GetName() string {
 	return b.node.GetName()
 }
 
-func (b *Ball) HandleCollision(this fwk.CollisionObject, other fwk.CollisionObject) {
-	pos := b.node.GetPosition()
-	half := b.size / 2
-	nearest := other.GetBoundingVolume().GetNearestTo(pos)
-	left := nearest.X - pos.X - half
-	right := nearest.X - pos.X + half
-	top := nearest.Y - pos.Y + half
-	bottom := nearest.Y - pos.Y - half
-	m := min(left, right, top, bottom)
-	if m == left || m == right {
-		b.direction.X *= -1
-	} else {
-		b.direction.Y *= -1
+func (b *Ball) HandleCollision(x, y int) {
+	if x != 0 {
+		b.direction.X = gl.Float(x)
+	}
+
+	if y != 0 {
+		b.direction.Y = gl.Float(y)
+	}
+}
+
+func (b *Ball) speedIncrement(ticker *time.Ticker) {
+	for _ = range ticker.C {
+		if b.speed < 20 {
+			b.speed += 0.5
+		} else {
+			ticker.Stop()
+			return
+		}
 	}
 }
 

@@ -1,8 +1,9 @@
 package fwk
 
 import (
-	gl "github.com/chsc/gogl/gl21"
 	"math"
+
+	gl "github.com/chsc/gogl/gl21"
 )
 
 type Node struct {
