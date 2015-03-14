@@ -25,7 +25,7 @@ func NewBall(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color
 	ball.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{ball.size, ball.size, color, "Ball"})
 	ball.direction = fwk.Vector{-1, 1, 0}
 	ball.speed = speed
-	go ball.speedIncrement(time.NewTicker(time.Duration(time.Second * 10)))
+	go ball.speedIncrement(time.NewTicker(time.Duration(time.Second * 5)))
 	return ball
 }
 
