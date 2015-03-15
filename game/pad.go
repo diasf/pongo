@@ -3,7 +3,6 @@ package game
 import (
 	"time"
 
-	gl "github.com/chsc/gogl/gl21"
 	"github.com/diasf/pongo/fwk"
 )
 
@@ -18,10 +17,10 @@ type Pad struct {
 	direction       int
 	lockedDirection int
 	speed           float32
-	width           gl.Float
-	widthHalf       gl.Float
-	height          gl.Float
-	heightHalf      gl.Float
+	width           float32
+	widthHalf       float32
+	height          float32
+	heightHalf      float32
 }
 
 func (p *Pad) SetDirection(dir int) {
@@ -49,7 +48,7 @@ func (p *Pad) IsDirectionLockedOn(dir int) bool {
 }
 
 func (p *Pad) Move(duration time.Duration) {
-	x := gl.Float(p.speed * float32(duration.Seconds()))
+	x := float32(p.speed * float32(duration.Seconds()))
 	if p.direction == MOVING_DOWN && !p.IsDirectionLockedOn(MOVING_DOWN) {
 		p.node.Move(&fwk.Vector{0, -x, 0})
 		p.UnLockDirection()
@@ -57,6 +56,10 @@ func (p *Pad) Move(duration time.Duration) {
 		p.node.Move(&fwk.Vector{0, x, 0})
 		p.UnLockDirection()
 	}
+}
+
+func (p *Pad) MoveY(diff float32) {
+	p.node.GetPosition().Y += diff
 }
 
 func (p *Pad) Rotate(deg float32, up fwk.Vector) {
@@ -69,7 +72,7 @@ func NewPad(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color,
 	pad.widthHalf = pad.width / 2.
 	pad.height = 100
 	pad.heightHalf = pad.height / 2.
-	pad.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{pad.width, pad.height, color, "Rect"})
+	pad.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{Width: pad.width, Height: pad.height, Color: color, Name: "Rect"})
 	pad.direction = MOVING_STOP
 	pad.lockedDirection = -1
 	pad.speed = speed
@@ -93,10 +96,10 @@ func (n *Pad) IsUnder(p fwk.Vector) bool {
 	return n.GetTop() <= p.Y
 }
 
-func (p *Pad) GetTop() gl.Float {
+func (p *Pad) GetTop() float32 {
 	return p.node.GetPosition().Y + p.heightHalf
 }
 
-func (p *Pad) GetBottom() gl.Float {
+func (p *Pad) GetBottom() float32 {
 	return p.node.GetPosition().Y - p.heightHalf
 }

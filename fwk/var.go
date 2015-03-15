@@ -1,11 +1,10 @@
 package fwk
 
-import (
-	gl "github.com/chsc/gogl/gl21"
-)
+import "golang.org/x/mobile/f32"
 
 type Drawable interface {
-	Draw(ratio float64)
+	Draw(modelView *f32.Mat4, ratio float64)
+	OnAttached()
 }
 
 type Named interface {
@@ -18,5 +17,9 @@ type NamedDrawable interface {
 }
 
 type Color struct {
-	R, G, B, A gl.Float
+	R, G, B, A float32
+}
+
+func (c Color) Slice() []float32 {
+	return []float32{c.R, c.G, c.B, c.A}
 }

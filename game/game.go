@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/diasf/pongo/fwk"
-	glfw "github.com/go-gl/glfw3"
+	"golang.org/x/mobile/event"
 )
 
 type pongoGame struct {
@@ -16,18 +16,19 @@ type pongoGame struct {
 	arena        *Arena
 	quit         bool
 	reactionTime time.Duration
+	lastTouch    event.Touch
 }
 
 func NewPongoGame(width, height int) fwk.Game {
 	pGame := &pongoGame{}
 	// initialize base game..
-	pGame.BaseGame = fwk.NewBaseGame(width, height, "PonGo")
+	pGame.BaseGame = fwk.NewBaseGame("PonGo")
 	pGame.quit = false
 	pGame.reactionTime = time.Duration(100) * time.Millisecond
 	// register handlers
 	pGame.SetGameSceneBuilder(pGame)
 	pGame.SetGameUpdateHandler(pGame)
-	pGame.SetKeyEventHandler(pGame)
+	pGame.SetTouchEventHandler(pGame)
 	pGame.GetCollisionDetector().AddCollisionHandler(pGame)
 	fmt.Println("PonGo game created")
 	return pGame
@@ -36,7 +37,6 @@ func NewPongoGame(width, height int) fwk.Game {
 func (g *pongoGame) Update(duration time.Duration) bool {
 	if !g.quit {
 		g.ball.Move(duration)
-		g.playerOne.Move(duration)
 		g.computerPlayerTwo()
 		g.playerTwo.Move(duration)
 	}
@@ -58,19 +58,12 @@ func (g *pongoGame) computerPlayerTwo() {
 	}
 }
 
-func (g *pongoGame) OnKeyEvent(key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	if action == glfw.Press && key == glfw.KeyUp {
-		if !g.playerOne.IsDirectionLockedOn(MOVING_UP) {
-			g.playerOne.SetDirection(MOVING_UP)
-		}
-	} else if action == glfw.Press && key == glfw.KeyDown {
-		if !g.playerOne.IsDirectionLockedOn(MOVING_DOWN) {
-			g.playerOne.SetDirection(MOVING_DOWN)
-		}
-	} else if action == glfw.Release && (key == glfw.KeyUp || key == glfw.KeyDown) {
-		g.playerOne.SetDirection(MOVING_STOP)
-	} else if action == glfw.Press && key == glfw.KeyEscape {
-		g.quit = true
+func (g *pongoGame) OnTouchEvent(t event.Touch) {
+	if t.Type == event.TouchStart {
+		g.lastTouch = t
+	} else if t.Type == event.TouchMove {
+		g.playerOne.MoveY(g.lastTouch.Loc.Y.Px() - t.Loc.Y.Px())
+		g.lastTouch = t
 	}
 }
 
@@ -87,7 +80,7 @@ func (g *pongoGame) BuildGameScene() {
 	g.playerTwo = NewPad(root, "Player2Node", fwk.Vector{185., 0., 0.}, fwk.Color{0., 0., 1., 1.}, 5.)
 	g.GetCollisionDetector().AddCollidable(g.playerTwo)
 	// the ring
-	g.arena = NewArena(root, "Arena", 400, 5, fwk.Color{.5, .5, .1, 1})
+	g.arena = NewArena(root, "Arena", 400, 10, fwk.Color{.5, .5, .1, 1})
 	g.GetCollisionDetector().AddCollidable(g.arena)
 }
 

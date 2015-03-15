@@ -3,7 +3,6 @@ package game
 import (
 	"time"
 
-	gl "github.com/chsc/gogl/gl21"
 	"github.com/diasf/pongo/fwk"
 )
 
@@ -12,17 +11,17 @@ type Ball struct {
 	direction       fwk.Vector
 	directionUpdate time.Time
 	speed           float32
-	size            gl.Float
+	size            float32
 }
 
 func (b *Ball) Move(duration time.Duration) {
-	b.node.Move(b.direction.Multiplication(gl.Float(b.speed * float32(duration.Seconds()))))
+	b.node.Move(b.direction.Multiplication(float32(b.speed * float32(duration.Seconds()))))
 }
 
 func NewBall(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color, speed float32) *Ball {
 	ball := &Ball{}
 	ball.size = 10
-	ball.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{ball.size, ball.size, color, "Ball"})
+	ball.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{Width: ball.size, Height: ball.size, Color: color, Name: "Ball"})
 	ball.direction = fwk.Vector{-1, 1, 0}
 	ball.speed = speed
 	go ball.speedIncrement(time.NewTicker(time.Duration(time.Second * 5)))
@@ -41,11 +40,11 @@ func (b *Ball) GetName() string {
 
 func (b *Ball) HandleCollision(x, y int) {
 	if x != 0 {
-		b.direction.X = gl.Float(x)
+		b.direction.X = float32(x)
 	}
 
 	if y != 0 {
-		b.direction.Y = gl.Float(y)
+		b.direction.Y = float32(y)
 	}
 }
 
@@ -60,7 +59,7 @@ func (b *Ball) speedIncrement(ticker *time.Ticker) {
 	}
 }
 
-func min(val ...gl.Float) (rs gl.Float) {
+func min(val ...float32) (rs float32) {
 	for i, v := range val {
 		if i == 0 || v < rs {
 			rs = v

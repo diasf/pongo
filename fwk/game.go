@@ -9,8 +9,10 @@ import (
 	"os"
 	"time"
 
-	gl "github.com/chsc/gogl/gl21"
-	glfw "github.com/go-gl/glfw3"
+	"golang.org/x/mobile/app"
+	"golang.org/x/mobile/event"
+	"golang.org/x/mobile/geom"
+	"golang.org/x/mobile/gl"
 )
 
 type GameSceneBuilder interface {
@@ -21,8 +23,8 @@ type GameUpdateHandler interface {
 	Update(duration time.Duration) bool
 }
 
-type KeyEventHandler interface {
-	OnKeyEvent(key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey)
+type TouchEventHandler interface {
+	OnTouchEvent(t event.Touch)
 }
 
 type Game interface {
@@ -30,28 +32,23 @@ type Game interface {
 }
 
 type BaseGame struct {
-	width, height     int               // width & height of the window
-	title             string            // title to show for the window
+	width, height     float32           // width & height of the window
 	fixedStep         time.Duration     // fixed time at which the GameUpdateHandler will be invoked
 	maxDelta          time.Duration     // maximum delta between updates
 	sceneBuilder      GameSceneBuilder  // Handler to build the scene
 	gameUpdateHandler GameUpdateHandler // Handler to update the game logic
-	keyEventHandler   KeyEventHandler   // Handler to handle key events
+	touchEventHandler TouchEventHandler // Handler to handle touch events
 	collisionDetector CollisionDetector // Used for checking collisions
 	scene             *Scene            // the scene object
-	window            *glfw.Window
 }
 
-func NewBaseGame(width, height int, title string) BaseGame {
+func NewBaseGame(title string) BaseGame {
 	bg := BaseGame{
-		width:             width,
-		height:            height,
-		title:             title,
 		fixedStep:         time.Duration(100 * time.Millisecond),
 		maxDelta:          time.Duration(250 * time.Millisecond),
 		sceneBuilder:      nil,
 		gameUpdateHandler: nil,
-		keyEventHandler:   nil,
+		touchEventHandler: nil,
 		collisionDetector: NewSimpleCollisionDetector(),
 		scene:             nil,
 	}
@@ -59,55 +56,47 @@ func NewBaseGame(width, height int, title string) BaseGame {
 }
 
 func (g *BaseGame) Start() {
-	if !glfw.Init() {
-		fmt.Fprintf(os.Stderr, "Error initializing glfw\n")
-		return
-	}
-	defer glfw.Terminate()
+	app.Run(app.Callbacks{
+		Start: g.onStart,
+		Stop:  g.onStop,
+		Draw:  g.onDraw(),
+		Touch: g.onTouch,
+	})
+}
 
-	glfw.WindowHint(glfw.Resizable, 0)
-	glfw.WindowHint(glfw.Resizable, 0)
+func (g *BaseGame) onStart() {
+	g.width = geom.Width.Px()
+	g.height = geom.Height.Px()
 
-	var err error
-	if g.window, err = glfw.CreateWindow(g.width, g.height, g.title, nil, nil); err != nil {
-		fmt.Fprintf(os.Stderr, "glfw: %s\n", err)
-		return
-	}
-
-	g.window.MakeContextCurrent()
-	glfw.SwapInterval(1)
-
-	if g.keyEventHandler != nil {
-		g.window.SetKeyCallback(func(win *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-			g.keyEventHandler.OnKeyEvent(key, scancode, action, mods)
-		})
-	}
-
-	if err := gl.Init(); err != nil {
-		fmt.Fprintf(os.Stderr, "gl: %s\n", err)
-	}
-
-	g.scene = &Scene{Width: gl.Sizei(g.width), Height: gl.Sizei(g.height)}
+	g.scene = &Scene{Width: g.width, Height: g.height}
 	if err := g.scene.Init(); err != nil {
 		fmt.Fprintf(os.Stderr, "init: %s\n", err)
 		return
 	}
-	defer g.scene.Destroy()
 
 	if g.sceneBuilder != nil {
 		g.sceneBuilder.BuildGameScene()
 	}
-
-	g.gameLoop()
 }
 
-func (g *BaseGame) gameLoop() {
+func (g *BaseGame) onStop() {
+	if g.scene != nil {
+		g.scene.Destroy()
+	}
+}
+
+func (g *BaseGame) onTouch(t event.Touch) {
+	if g.touchEventHandler != nil {
+		g.touchEventHandler.OnTouchEvent(t)
+	}
+}
+
+func (g *BaseGame) onDraw() func() {
 	timer := NewTimer()
 	accu := time.Duration(0)
 	cont := true
 	ratio := float64(0)
-	for !g.window.ShouldClose() && cont {
-
+	return func() {
 		delta := timer.Delta()
 
 		if delta > g.maxDelta {
@@ -126,8 +115,6 @@ func (g *BaseGame) gameLoop() {
 			ratio = accu.Seconds() / g.fixedStep.Seconds()
 			g.GetCollisionDetector().Check()
 			g.scene.Draw(ratio)
-			g.window.SwapBuffers()
-			glfw.PollEvents()
 		}
 	}
 }
@@ -149,23 +136,23 @@ func (g *BaseGame) SetGameUpdateHandler(handler GameUpdateHandler) {
 	g.gameUpdateHandler = handler
 }
 
-// Handler to handle key events
-func (g *BaseGame) SetKeyEventHandler(handler KeyEventHandler) {
-	g.keyEventHandler = handler
+// Handler to handle touch events
+func (g *BaseGame) SetTouchEventHandler(handler TouchEventHandler) {
+	g.touchEventHandler = handler
 }
 
-func createTexture(r io.Reader) (textureId gl.Uint, err error) {
+func createTextureFromPng(r io.Reader) (textureId gl.Texture, err error) {
 	img, err := png.Decode(r)
 	if err != nil {
-		return 0, err
+		return
 	}
 
 	rgbaImg, ok := img.(*image.NRGBA)
 	if !ok {
-		return 0, errors.New("texture must be an NRGBA image")
+		return textureId, errors.New("texture must be an NRGBA image")
 	}
 
-	gl.GenTextures(1, &textureId)
+	textureId = gl.GenTexture()
 	gl.BindTexture(gl.TEXTURE_2D, textureId)
 	gl.TexParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 	gl.TexParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
@@ -179,7 +166,6 @@ func createTexture(r io.Reader) (textureId gl.Uint, err error) {
 		copy(data[dest:dest+lineLen], rgbaImg.Pix[src:src+rgbaImg.Stride])
 		dest -= lineLen
 	}
-	gl.TexImage2D(gl.TEXTURE_2D, 0, 4, gl.Sizei(imgWidth), gl.Sizei(imgHeight), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Pointer(&data[0]))
-
-	return textureId, nil
+	gl.TexImage2D(gl.TEXTURE_2D, 0, imgWidth, imgHeight, gl.RGBA, gl.UNSIGNED_BYTE, data)
+	return
 }

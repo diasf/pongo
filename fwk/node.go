@@ -3,7 +3,7 @@ package fwk
 import (
 	"math"
 
-	gl "github.com/chsc/gogl/gl21"
+	"golang.org/x/mobile/f32"
 )
 
 type Node struct {
@@ -11,20 +11,23 @@ type Node struct {
 	name          string
 	position      Vector
 	rotationAxe   Vector
-	rotationAngle gl.Float
+	rotationAngle float32
 	children      []NamedDrawable
+	modelView     *f32.Mat4
 }
 
-func (n *Node) Draw(ratio float64) {
-	gl.PushMatrix()
-	gl.Translatef(n.position.X, n.position.Y, n.position.Z)
+func (n *Node) Draw(modelView *f32.Mat4, ratio float64) {
+	nodeMV := &f32.Mat4{}
+	nodeMV.Translate(modelView, n.position.X, n.position.Y, n.position.Z)
 	if n.rotationAngle != 0 {
-		gl.Rotatef(n.rotationAngle, n.rotationAxe.X, n.rotationAxe.Y, n.rotationAxe.Z)
+		nodeMV.Rotate(nodeMV, f32.Radian(n.rotationAngle), &f32.Vec3{n.rotationAxe.X, n.rotationAxe.Y, n.rotationAxe.Z})
 	}
 	for _, c := range n.children {
-		c.Draw(ratio)
+		c.Draw(nodeMV, ratio)
 	}
-	gl.PopMatrix()
+}
+
+func (n *Node) OnAttached() {
 }
 
 func (n *Node) Move(trans *Vector) {
@@ -33,7 +36,7 @@ func (n *Node) Move(trans *Vector) {
 
 func (n *Node) Rotate(deg float32, up Vector) {
 	println("setting rotation angle to:", deg*(math.Pi/180.), " : ", math.Pi)
-	n.rotationAngle = gl.Float(deg)
+	n.rotationAngle = float32(deg)
 	n.rotationAxe = up
 }
 
@@ -47,6 +50,7 @@ func (n *Node) GetPosition() *Vector {
 
 func (n *Node) AddDrawable(d NamedDrawable) (rs *Node) {
 	n.children = append(n.children, d)
+	d.OnAttached()
 	return n
 }
 

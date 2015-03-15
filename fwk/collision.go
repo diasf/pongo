@@ -1,9 +1,5 @@
 package fwk
 
-import (
-	gl "github.com/chsc/gogl/gl21"
-)
-
 type CollisionDetector interface {
 	Check()
 	AddCollidable(c Collidable)
@@ -85,7 +81,7 @@ func newCollisionObject(obj Collidable, bv BoundingVolume) CollisionObject {
 // Bounding Box -----------------------------------------------
 
 type BoundingBox struct {
-	Left, Right, Top, Bottom gl.Float
+	Left, Right, Top, Bottom float32
 }
 
 func (v *BoundingBox) CollidesWith(other BoundingVolume) bool {
@@ -120,7 +116,7 @@ func (v *BoundingBox) inVolume(p *Vector) bool {
 // Bounding Sphere -----------------------------------------------
 
 type BoundingSphere struct {
-	radius   float64
+	radius   float32
 	position *Vector
 }
 
@@ -139,5 +135,5 @@ func (v *BoundingSphere) CollidesWith(other BoundingVolume) (collides bool) {
 }
 
 func (v *BoundingSphere) GetNearestTo(p *Vector) *Vector {
-	return v.position.Substraction(p).Normalize().Mult(gl.Float(v.radius))
+	return v.position.Substraction(p).Normalize().Mult(v.radius)
 }
