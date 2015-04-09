@@ -1,8 +1,6 @@
 package fwk
 
 import (
-	"math"
-
 	"golang.org/x/mobile/f32"
 )
 
@@ -35,7 +33,6 @@ func (n *Node) Move(trans *Vector) {
 }
 
 func (n *Node) Rotate(deg float32, up Vector) {
-	println("setting rotation angle to:", deg*(math.Pi/180.), " : ", math.Pi)
 	n.rotationAngle = float32(deg)
 	n.rotationAxe = up
 }

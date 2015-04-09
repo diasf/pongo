@@ -14,6 +14,7 @@ type Scene struct {
 
 func (s *Scene) Init() (err error) {
 	gl.ClearColor(0., 0., 0., 0.)
+	gl.Enable(gl.CULL_FACE)
 
 	if s.renderer, err = GetRenderer(); err != nil {
 		return

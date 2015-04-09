@@ -5,12 +5,15 @@ import (
 
 	"golang.org/x/mobile/f32"
 	"golang.org/x/mobile/gl"
+
+	"github.com/diasf/pongo/fwk/tex"
 )
 
 type Rectangle struct {
 	Width        float32
 	Height       float32
 	Color        Color
+	Texture      *tex.Texture
 	Name         string
 	vertexBuffer gl.Buffer
 	indexBuffer  gl.Buffer
@@ -21,13 +24,12 @@ type Rectangle struct {
 func (r *Rectangle) OnAttached() {
 	w2 := r.Width / float32(2.)
 	h2 := r.Height / float32(2.)
-	col := r.Color.Slice()
 
 	vertices := []float32{}
-	vertices = append(vertices, append([]float32{w2, -h2, 0}, col...)...)
-	vertices = append(vertices, append([]float32{w2, h2, 0}, col...)...)
-	vertices = append(vertices, append([]float32{-w2, h2, 0}, col...)...)
-	vertices = append(vertices, append([]float32{-w2, -h2, 0}, col...)...)
+	vertices = append(vertices, w2, -h2, 0)
+	vertices = append(vertices, w2, h2, 0)
+	vertices = append(vertices, -w2, h2, 0)
+	vertices = append(vertices, -w2, -h2, 0)
 
 	var indices = []byte{
 		0, 1, 2,
@@ -58,9 +60,9 @@ func (r *Rectangle) standardShaderExecution(modelView gl.Uniform, color, positio
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, r.vertexBuffer)
 	gl.EnableVertexAttribArray(position)
-	gl.VertexAttribPointer(position, 3, gl.FLOAT, false, 7*4, 0)
-	gl.EnableVertexAttribArray(color)
-	gl.VertexAttribPointer(color, 4, gl.FLOAT, false, 7*4, 3*4)
+	gl.VertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0)
+
+	gl.VertexAttrib4fv(color, r.Color.Slice())
 
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, r.indexBuffer)
 	gl.DrawElements(gl.TRIANGLES, gl.UNSIGNED_BYTE, 0, r.indicesCount)

@@ -1,18 +1,13 @@
 package fwk
 
 import (
-	"errors"
 	"fmt"
-	"image"
-	"image/png"
-	"io"
 	"os"
 	"time"
 
 	"golang.org/x/mobile/app"
 	"golang.org/x/mobile/event"
 	"golang.org/x/mobile/geom"
-	"golang.org/x/mobile/gl"
 )
 
 type GameSceneBuilder interface {
@@ -139,33 +134,4 @@ func (g *BaseGame) SetGameUpdateHandler(handler GameUpdateHandler) {
 // Handler to handle touch events
 func (g *BaseGame) SetTouchEventHandler(handler TouchEventHandler) {
 	g.touchEventHandler = handler
-}
-
-func createTextureFromPng(r io.Reader) (textureId gl.Texture, err error) {
-	img, err := png.Decode(r)
-	if err != nil {
-		return
-	}
-
-	rgbaImg, ok := img.(*image.NRGBA)
-	if !ok {
-		return textureId, errors.New("texture must be an NRGBA image")
-	}
-
-	textureId = gl.GenTexture()
-	gl.BindTexture(gl.TEXTURE_2D, textureId)
-	gl.TexParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-
-	// flip image: first pixel is lower left corner
-	imgWidth, imgHeight := img.Bounds().Dx(), img.Bounds().Dy()
-	data := make([]byte, imgWidth*imgHeight*4)
-	lineLen := imgWidth * 4
-	dest := len(data) - lineLen
-	for src := 0; src < len(rgbaImg.Pix); src += rgbaImg.Stride {
-		copy(data[dest:dest+lineLen], rgbaImg.Pix[src:src+rgbaImg.Stride])
-		dest -= lineLen
-	}
-	gl.TexImage2D(gl.TEXTURE_2D, 0, imgWidth, imgHeight, gl.RGBA, gl.UNSIGNED_BYTE, data)
-	return
 }

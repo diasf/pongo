@@ -19,7 +19,7 @@ type pongoGame struct {
 	lastTouch    event.Touch
 }
 
-func NewPongoGame(width, height int) fwk.Game {
+func NewPongoGame() fwk.Game {
 	pGame := &pongoGame{}
 	// initialize base game..
 	pGame.BaseGame = fwk.NewBaseGame("PonGo")
