@@ -1,6 +1,9 @@
 package game
 
-import "github.com/diasf/pongo/fwk"
+import (
+	"github.com/diasf/pongo/fwk"
+	"github.com/diasf/pongo/fwk/tex"
+)
 
 // the arena has two bars
 type Arena struct {
@@ -14,7 +17,7 @@ type Arena struct {
 	halfwallwidth float32
 }
 
-func NewArena(parent *fwk.Node, name string, ringsize float32, wallwidth float32, color fwk.Color) *Arena {
+func NewArena(parent *fwk.Node, name string, ringsize float32, wallwidth float32, color fwk.Color, texture *tex.Texture) *Arena {
 	arena := &Arena{}
 	arena.name = name
 	arena.ringsize = float32(ringsize)
@@ -24,7 +27,7 @@ func NewArena(parent *fwk.Node, name string, ringsize float32, wallwidth float32
 
 	// top
 	topPos := fwk.Vector{0., arena.halfring - arena.halfwallwidth, 0.}
-	barTop := &fwk.Rectangle{Width: float32(ringsize), Height: float32(wallwidth), Color: color, Name: "BorderRectTop"}
+	barTop := &fwk.Rectangle{Width: float32(ringsize), Height: float32(wallwidth), Color: color, Name: "BorderRectTop", Texture: texture}
 	arena.top = fwk.NewNode(parent, "TopBorderN", topPos).AddDrawable(barTop)
 	topBox := &fwk.BoundingBox{Left: topPos.X - arena.halfring, Right: topPos.X + arena.halfring, Top: topPos.Y + arena.halfwallwidth, Bottom: topPos.Y - arena.halfwallwidth}
 

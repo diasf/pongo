@@ -1,10 +1,10 @@
 package tex
 
 import (
-	"errors"
 	"image"
 	"image/png"
 	"io"
+	"log"
 
 	"golang.org/x/mobile/gl"
 )
@@ -35,7 +35,7 @@ func (t *Texture) AddTexData(level int, data TexData) {
 }
 
 func (t *Texture) Upload() error {
-	gl.BindTexture(t.target, t.Id)
+	t.Bind()
 	for lvl, data := range t.Levels {
 		bin, err := data.Bin()
 		if err != nil {
@@ -44,6 +44,10 @@ func (t *Texture) Upload() error {
 		gl.TexImage2D(t.target, lvl, data.Width(), data.Height(), data.Format(), gl.UNSIGNED_BYTE, bin)
 	}
 	return nil
+}
+
+func (t *Texture) Bind() {
+	gl.BindTexture(t.target, t.Id)
 }
 
 func NewTexDataFromPNG(r io.Reader) TexData {
@@ -75,10 +79,8 @@ func (t *texDataPNG) Bin() (data []byte, err error) {
 		return
 	}
 
-	rgbaImg, ok := img.(*image.NRGBA)
-	if !ok {
-		return nil, errors.New("Texture must be an NRGBA image")
-	}
+	pix, stride := getPNGPix(img)
+	log.Printf("Pix: %v stride:%v", len(pix), stride)
 
 	t.format = gl.RGBA
 	t.width, t.height = img.Bounds().Dx(), img.Bounds().Dy()
@@ -89,9 +91,21 @@ func (t *texDataPNG) Bin() (data []byte, err error) {
 
 	data = make([]byte, dataSize)
 	dest := dataSize - lineLen
-	for src := 0; src < len(rgbaImg.Pix); src += rgbaImg.Stride {
-		copy(data[dest:dest+lineLen], rgbaImg.Pix[src:src+rgbaImg.Stride])
+	for src := 0; src < len(pix); src += stride {
+		copy(data[dest:dest+lineLen], pix[src:src+stride])
 		dest -= lineLen
+	}
+	return
+}
+
+func getPNGPix(img image.Image) (pix []uint8, stride int) {
+	switch pngImg := img.(type) {
+	case *image.NRGBA:
+		return pngImg.Pix, pngImg.Stride
+	case *image.RGBA:
+		return pngImg.Pix, pngImg.Stride
+	default:
+		log.Fatalln("Not supported image format, must be RGBA/NRGBA")
 	}
 	return
 }

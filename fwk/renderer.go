@@ -35,8 +35,11 @@ type StandardShader struct {
 	program          gl.Program
 	projection       gl.Uniform
 	modelView        gl.Uniform
+	withTexture      gl.Uniform
+	texture          gl.Uniform
 	position         gl.Attrib
 	color            gl.Attrib
+	texCoord         gl.Attrib
 	projectionMatrix []float32
 	listenerCount    int
 	listeners        map[int]StandardListener
@@ -48,10 +51,15 @@ func newStandardShader() (s *StandardShader, err error) {
 		log.Printf("error creating GL program: %v", err)
 		return
 	}
-	s.position = gl.GetAttribLocation(s.program, "Position")
-	s.color = gl.GetAttribLocation(s.program, "Color")
-	s.projection = gl.GetUniformLocation(s.program, "Projection")
-	s.modelView = gl.GetUniformLocation(s.program, "ModelView")
+	s.position = gl.GetAttribLocation(s.program, "a_position")
+	s.color = gl.GetAttribLocation(s.program, "a_color")
+	s.texCoord = gl.GetAttribLocation(s.program, "a_texCoord")
+
+	s.projection = gl.GetUniformLocation(s.program, "u_projection")
+	s.modelView = gl.GetUniformLocation(s.program, "u_modelView")
+	s.withTexture = gl.GetUniformLocation(s.program, "u_withTexture")
+	s.texture = gl.GetUniformLocation(s.program, "u_texture")
+
 	s.listeners = map[int]StandardListener{}
 	return
 }
@@ -100,9 +108,9 @@ func (s *StandardShader) incrListenerId() int {
 
 type StandardListener func(std *StandardShader)
 
-func StandardDrawListener(listener func(modelView gl.Uniform, color, position gl.Attrib)) StandardListener {
+func StandardDrawListener(listener func(modelView, withTexture, texture gl.Uniform, color, texCoord, position gl.Attrib)) StandardListener {
 	return func(std *StandardShader) {
-		listener(std.modelView, std.color, std.position)
+		listener(std.modelView, std.withTexture, std.texture, std.color, std.texCoord, std.position)
 	}
 }
 
@@ -117,22 +125,37 @@ func conv(mat *f32.Mat4) []float32 {
 }
 
 const vertexShader = `#version 100
-attribute vec4 Position;
-uniform mat4 Projection;
-uniform mat4 ModelView;
-attribute vec4 Color;
-varying vec4 DestinationColor;
+uniform mat4 u_projection;
+uniform mat4 u_modelView;
+
+attribute vec4 a_position;
+attribute vec4 a_color;
+attribute vec2 a_texCoord;
+
+varying vec4 v_destinationColor;
+varying vec2 v_texCoord;
  
 void main(void) {
-	DestinationColor = Color;
-	gl_Position = Projection * ModelView * Position;
+	v_destinationColor = a_color;
+	v_texCoord = a_texCoord;
+	gl_Position = u_projection * u_modelView * a_position;
 }
 `
 
 const fragmentShader = `#version 100
 precision mediump float;
-varying lowp vec4 DestinationColor;
+
+varying lowp vec4 v_destinationColor;
+varying vec2 v_texCoord;
+
+uniform bool u_withTexture;
+uniform sampler2D u_texture;
  
 void main(void) {
-	gl_FragColor = DestinationColor;
+	if(u_withTexture) {
+		//gl_FragColor = texture2D(u_texture, v_texCoord);
+		gl_FragColor = v_destinationColor;
+	} else {
+		gl_FragColor = v_destinationColor;
+	}
 }`

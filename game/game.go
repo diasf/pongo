@@ -2,9 +2,12 @@ package game
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/diasf/pongo/fwk"
+	"github.com/diasf/pongo/fwk/tex"
 	"golang.org/x/mobile/event"
 )
 
@@ -80,7 +83,14 @@ func (g *pongoGame) BuildGameScene() {
 	g.playerTwo = NewPad(root, "Player2Node", fwk.Vector{185., 0., 0.}, fwk.Color{0., 0., 1., 1.}, 5.)
 	g.GetCollisionDetector().AddCollidable(g.playerTwo)
 	// the ring
-	g.arena = NewArena(root, "Arena", 400, 10, fwk.Color{.5, .5, .1, 1})
+	file, err := os.Open("/home/socky/go/src/github.com/diasf/pongo/res/BrickRound0046_2_S.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	texture := tex.GenTexture()
+	texture.AddTexData(0, tex.NewTexDataFromPNG(file))
+	g.arena = NewArena(root, "Arena", 400, 10, fwk.Color{.5, .5, .1, 1}, texture)
 	g.GetCollisionDetector().AddCollidable(g.arena)
 }
 
