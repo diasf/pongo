@@ -153,8 +153,12 @@ uniform sampler2D u_texture;
  
 void main(void) {
 	if(u_withTexture) {
-		//gl_FragColor = texture2D(u_texture, v_texCoord);
-		gl_FragColor = v_destinationColor;
+		vec4 texel = texture2D(u_texture, v_texCoord);
+		if (texel.a < 0.5) {
+			discard;
+		}
+
+		gl_FragColor = texel;
 	} else {
 		gl_FragColor = v_destinationColor;
 	}

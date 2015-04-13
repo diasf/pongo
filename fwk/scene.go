@@ -15,6 +15,9 @@ type Scene struct {
 func (s *Scene) Init() (err error) {
 	gl.ClearColor(0., 0., 0., 0.)
 	gl.Enable(gl.CULL_FACE)
+	gl.Enable(gl.DEPTH_TEST)
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	if s.renderer, err = GetRenderer(); err != nil {
 		return

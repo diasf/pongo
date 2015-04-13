@@ -17,7 +17,7 @@ type Arena struct {
 	halfwallwidth float32
 }
 
-func NewArena(parent *fwk.Node, name string, ringsize float32, wallwidth float32, color fwk.Color, texture *tex.Texture) *Arena {
+func NewArena(parent *fwk.Node, name string, ringsize float32, wallwidth float32) *Arena {
 	arena := &Arena{}
 	arena.name = name
 	arena.ringsize = float32(ringsize)
@@ -25,15 +25,28 @@ func NewArena(parent *fwk.Node, name string, ringsize float32, wallwidth float32
 	arena.wallwidth = float32(wallwidth)
 	arena.halfwallwidth = arena.wallwidth / 2.
 
+	// the ring
+	texture := tex.NewTextureFromPNGFile("res/BrickRound0046_2_S.png")
+	texture.SetRepeat()
+	texture.SetMagFilterNearest()
+	texture.SetMinFilterNearest()
+
+	texCoord := &fwk.RectangleTexCoord{
+		BottomLeft:  fwk.Vector2{.0, .0},
+		BottomRight: fwk.Vector2{.8, .0},
+		TopLeft:     fwk.Vector2{.0, .11},
+		TopRight:    fwk.Vector2{.8, .11},
+	}
+
 	// top
 	topPos := fwk.Vector{0., arena.halfring - arena.halfwallwidth, 0.}
-	barTop := &fwk.Rectangle{Width: float32(ringsize), Height: float32(wallwidth), Color: color, Name: "BorderRectTop", Texture: texture}
+	barTop := &fwk.Rectangle{Width: float32(ringsize), Height: float32(wallwidth), Name: "BorderRectTop", Texture: texture, TexCoord: texCoord}
 	arena.top = fwk.NewNode(parent, "TopBorderN", topPos).AddDrawable(barTop)
 	topBox := &fwk.BoundingBox{Left: topPos.X - arena.halfring, Right: topPos.X + arena.halfring, Top: topPos.Y + arena.halfwallwidth, Bottom: topPos.Y - arena.halfwallwidth}
 
 	// bottom
 	bottomPos := fwk.Vector{0., -arena.halfring + arena.halfwallwidth, 0.}
-	barBottom := &fwk.Rectangle{Width: float32(ringsize), Height: float32(wallwidth), Color: color, Name: "BorderRectBottom"}
+	barBottom := &fwk.Rectangle{Width: float32(ringsize), Height: float32(wallwidth), Name: "BorderRectBottom", Texture: texture, TexCoord: texCoord}
 	arena.bottom = fwk.NewNode(parent, "BottomBorderN", bottomPos).AddDrawable(barBottom)
 	bottomBox := &fwk.BoundingBox{Left: bottomPos.X - arena.halfring, Right: bottomPos.X + arena.halfring, Top: bottomPos.Y + arena.halfwallwidth, Bottom: bottomPos.Y - arena.halfwallwidth}
 

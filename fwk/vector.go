@@ -2,6 +2,10 @@ package fwk
 
 import "math"
 
+type Vector2 struct {
+	X, Y float32
+}
+
 type Vector struct {
 	X, Y, Z float32
 }

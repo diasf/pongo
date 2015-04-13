@@ -16,6 +16,7 @@ type Rectangle struct {
 	Height         float32
 	Color          Color
 	Texture        *tex.Texture
+	TexCoord       *RectangleTexCoord
 	Name           string
 	vertexBuffer   gl.Buffer
 	indexBuffer    gl.Buffer
@@ -24,15 +25,24 @@ type Rectangle struct {
 	verticesStride int
 }
 
+type RectangleTexCoord struct {
+	TopLeft     Vector2
+	TopRight    Vector2
+	BottomLeft  Vector2
+	BottomRight Vector2
+}
+
 func (r *Rectangle) OnAttached() {
 	w2 := r.Width / float32(2.)
 	h2 := r.Height / float32(2.)
 
+	texCoord := r.buildTexCoord()
+
 	vertices := []float32{}
-	vertices = append(vertices, w2, -h2, 0, 1, 0)
-	vertices = append(vertices, w2, h2, 0, 1, 1)
-	vertices = append(vertices, -w2, h2, 0, 0, 1)
-	vertices = append(vertices, -w2, -h2, 0, 0, 0)
+	vertices = append(vertices, w2, -h2, 0, texCoord.BottomRight.X, texCoord.BottomRight.Y)
+	vertices = append(vertices, w2, h2, 0, texCoord.TopRight.X, texCoord.TopRight.Y)
+	vertices = append(vertices, -w2, h2, 0, texCoord.TopLeft.X, texCoord.TopLeft.Y)
+	vertices = append(vertices, -w2, -h2, 0, texCoord.BottomLeft.X, texCoord.BottomLeft.Y)
 	r.verticesStride = 5
 
 	var indices = []byte{
@@ -62,6 +72,18 @@ func (r *Rectangle) OnAttached() {
 	}
 }
 
+func (r *Rectangle) buildTexCoord() *RectangleTexCoord {
+	if r.TexCoord != nil {
+		return r.TexCoord
+	}
+	return &RectangleTexCoord{
+		BottomLeft:  Vector2{0, 0},
+		BottomRight: Vector2{0, 1},
+		TopLeft:     Vector2{1, 0},
+		TopRight:    Vector2{1, 1},
+	}
+}
+
 func (r *Rectangle) Draw(modelView *f32.Mat4, ratio float64) {
 	r.modelView = conv(modelView)
 }
@@ -81,7 +103,6 @@ func (r *Rectangle) standardShaderExecution(modelView, withTexture, texture gl.U
 		gl.ActiveTexture(gl.TEXTURE0)
 		r.Texture.Bind()
 		gl.Uniform1i(texture, 0)
-		log.Printf("Upload tex:%v err:%v", texture, errDrain())
 	} else {
 		gl.Uniform1i(withTexture, 0)
 	}

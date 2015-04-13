@@ -2,8 +2,6 @@ package game
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	"github.com/diasf/pongo/fwk"
@@ -73,25 +71,30 @@ func (g *pongoGame) OnTouchEvent(t event.Touch) {
 func (g *pongoGame) BuildGameScene() {
 	root := g.GetScene().GetRoot()
 
-	// ball
-	g.ball = NewBall(root, "BallNode", fwk.Vector{0., 0., 0.}, fwk.Color{0., 1., 0., 1.}, 3.5)
-	g.GetCollisionDetector().AddCollidable(g.ball)
+	attachBackground(root)
+
 	// player one pad
-	g.playerOne = NewPad(root, "Player1Node", fwk.Vector{-185., 0., 0.}, fwk.Color{1., 0., 0., 1.}, 5.)
+	g.playerOne = NewPad(root, "Player1Node", fwk.Vector{-185., 0., -1.}, 5., "res/Groundplants0097_8_S.png")
 	g.GetCollisionDetector().AddCollidable(g.playerOne)
 	// player two pad
-	g.playerTwo = NewPad(root, "Player2Node", fwk.Vector{185., 0., 0.}, fwk.Color{0., 0., 1., 1.}, 5.)
+	g.playerTwo = NewPad(root, "Player2Node", fwk.Vector{185., 0., -1.}, 5., "res/Groundplants0097_9_S.png")
 	g.GetCollisionDetector().AddCollidable(g.playerTwo)
-	// the ring
-	file, err := os.Open("/home/socky/go/src/github.com/diasf/pongo/res/BrickRound0046_2_S.png")
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	texture := tex.GenTexture()
-	texture.AddTexData(0, tex.NewTexDataFromPNG(file))
-	g.arena = NewArena(root, "Arena", 400, 10, fwk.Color{.5, .5, .1, 1}, texture)
+	g.arena = NewArena(root, "Arena", 400, 10)
 	g.GetCollisionDetector().AddCollidable(g.arena)
+
+	// ball
+	g.ball = NewBall(root, "BallNode", fwk.Vector{0., 0., -1.}, 3.5, "res/NatureDesert0090_5_S_mod.png")
+	g.GetCollisionDetector().AddCollidable(g.ball)
+
+}
+
+func attachBackground(root *fwk.Node) {
+	texture := tex.NewTextureFromPNGFile("res/FloorsVarious0046_1_S.png")
+	texture.SetRepeat()
+	texture.SetMagFilterNearest()
+	texture.SetMinFilterNearest()
+	fwk.NewNode(root, "Background", fwk.Vector{0, 0, -2}).AddDrawable(&fwk.Rectangle{Width: 400, Height: 400, Color: fwk.Color{0, 1, 1, 1}, Name: "Rect", Texture: texture})
 }
 
 func (g *pongoGame) HandleCollision(one, two fwk.CollisionObject) {

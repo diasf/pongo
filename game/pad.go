@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/diasf/pongo/fwk"
+	"github.com/diasf/pongo/fwk/tex"
 )
 
 const (
@@ -66,13 +67,26 @@ func (p *Pad) Rotate(deg float32, up fwk.Vector) {
 	p.node.Rotate(deg, up)
 }
 
-func NewPad(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color, speed float32) *Pad {
+func NewPad(parent *fwk.Node, name string, position fwk.Vector, speed float32, texturePng string) *Pad {
 	pad := &Pad{}
 	pad.width = 10
 	pad.widthHalf = pad.width / 2.
 	pad.height = 100
 	pad.heightHalf = pad.height / 2.
-	pad.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{Width: pad.width, Height: pad.height, Color: color, Name: "Rect"})
+
+	texture := tex.NewTextureFromPNGFile(texturePng)
+	texture.SetRepeat()
+	texture.SetMagFilterNearest()
+	texture.SetMinFilterNearest()
+
+	texCoord := &fwk.RectangleTexCoord{
+		BottomLeft:  fwk.Vector2{.0, .0},
+		BottomRight: fwk.Vector2{.07, .0},
+		TopLeft:     fwk.Vector2{.0, .3},
+		TopRight:    fwk.Vector2{.07, .3},
+	}
+
+	pad.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{Width: pad.width, Height: pad.height, Name: "Rect", Texture: texture, TexCoord: texCoord})
 	pad.direction = MOVING_STOP
 	pad.lockedDirection = -1
 	pad.speed = speed

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/diasf/pongo/fwk"
+	"github.com/diasf/pongo/fwk/tex"
 )
 
 type Ball struct {
@@ -18,10 +19,15 @@ func (b *Ball) Move(duration time.Duration) {
 	b.node.Move(b.direction.Multiplication(float32(b.speed * float32(duration.Seconds()))))
 }
 
-func NewBall(parent *fwk.Node, name string, position fwk.Vector, color fwk.Color, speed float32) *Ball {
+func NewBall(parent *fwk.Node, name string, position fwk.Vector, speed float32, texturePng string) *Ball {
 	ball := &Ball{}
-	ball.size = 10
-	ball.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{Width: ball.size, Height: ball.size, Color: color, Name: "Ball"})
+	ball.size = 20
+
+	texture := tex.NewTextureFromPNGFile(texturePng)
+	texture.SetMagFilterNearest()
+	texture.SetMinFilterNearest()
+
+	ball.node = fwk.NewNode(parent, name, position).AddDrawable(&fwk.Rectangle{Width: ball.size, Height: ball.size, Name: "Ball", Texture: texture})
 	ball.direction = fwk.Vector{-1, 1, 0}
 	ball.speed = speed
 	go ball.speedIncrement(time.NewTicker(time.Duration(time.Second * 5)))

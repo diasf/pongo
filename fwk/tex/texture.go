@@ -5,14 +5,18 @@ import (
 	"image/png"
 	"io"
 	"log"
+	"os"
 
 	"golang.org/x/mobile/gl"
 )
 
+var currentlyBound gl.Texture
+
 type Texture struct {
-	Id     gl.Texture
-	Levels map[int]TexData
-	target gl.Enum
+	Id       gl.Texture
+	Levels   map[int]TexData
+	target   gl.Enum
+	uploaded bool
 }
 
 type TexData interface {
@@ -35,6 +39,9 @@ func (t *Texture) AddTexData(level int, data TexData) {
 }
 
 func (t *Texture) Upload() error {
+	if t.uploaded {
+		return nil
+	}
 	t.Bind()
 	for lvl, data := range t.Levels {
 		bin, err := data.Bin()
@@ -43,11 +50,43 @@ func (t *Texture) Upload() error {
 		}
 		gl.TexImage2D(t.target, lvl, data.Width(), data.Height(), data.Format(), gl.UNSIGNED_BYTE, bin)
 	}
+	t.uploaded = true
 	return nil
 }
 
+func (t *Texture) SetMinFilterNearest() {
+	t.Bind()
+	gl.TexParameteri(t.target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+}
+
+func (t *Texture) SetMagFilterNearest() {
+	t.Bind()
+	gl.TexParameteri(t.target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+}
+
+func (t *Texture) SetRepeat() {
+	t.Bind()
+	gl.TexParameteri(t.target, gl.TEXTURE_WRAP_S, gl.REPEAT)
+	gl.TexParameteri(t.target, gl.TEXTURE_WRAP_T, gl.REPEAT)
+}
+
 func (t *Texture) Bind() {
+	if currentlyBound == t.Id {
+		return
+	}
 	gl.BindTexture(t.target, t.Id)
+	currentlyBound = t.Id
+}
+
+func NewTextureFromPNGFile(fileName string) *Texture {
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	texture := GenTexture()
+	texture.AddTexData(0, NewTexDataFromPNG(file))
+	return texture
 }
 
 func NewTexDataFromPNG(r io.Reader) TexData {
@@ -80,7 +119,6 @@ func (t *texDataPNG) Bin() (data []byte, err error) {
 	}
 
 	pix, stride := getPNGPix(img)
-	log.Printf("Pix: %v stride:%v", len(pix), stride)
 
 	t.format = gl.RGBA
 	t.width, t.height = img.Bounds().Dx(), img.Bounds().Dy()
