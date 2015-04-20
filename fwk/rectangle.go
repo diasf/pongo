@@ -52,13 +52,13 @@ func (r *Rectangle) OnAttached() {
 
 	r.indicesCount = len(indices)
 
-	r.vertexBuffer = gl.GenBuffer()
+	r.vertexBuffer = gl.CreateBuffer()
 	gl.BindBuffer(gl.ARRAY_BUFFER, r.vertexBuffer)
-	gl.BufferData(gl.ARRAY_BUFFER, gl.STATIC_DRAW, f32.Bytes(binary.LittleEndian, vertices...))
+	gl.BufferData(gl.ARRAY_BUFFER, f32.Bytes(binary.LittleEndian, vertices...), gl.STATIC_DRAW)
 
-	r.indexBuffer = gl.GenBuffer()
+	r.indexBuffer = gl.CreateBuffer()
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, r.indexBuffer)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, gl.STATIC_DRAW, indices)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW)
 
 	if r.Texture != nil {
 		if err := r.Texture.Upload(); err != nil {
@@ -110,7 +110,7 @@ func (r *Rectangle) standardShaderExecution(modelView, withTexture, texture gl.U
 	gl.VertexAttrib4fv(color, r.Color.Slice())
 
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, r.indexBuffer)
-	gl.DrawElements(gl.TRIANGLES, gl.UNSIGNED_BYTE, 0, r.indicesCount)
+	gl.DrawElements(gl.TRIANGLES, r.indicesCount, gl.UNSIGNED_BYTE, 0)
 
 	gl.DisableVertexAttribArray(position)
 	gl.DisableVertexAttribArray(color)

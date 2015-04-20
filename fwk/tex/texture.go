@@ -28,7 +28,7 @@ type TexData interface {
 
 func GenTexture() *Texture {
 	return &Texture{
-		Id:     gl.GenTexture(),
+		Id:     gl.CreateTexture(),
 		Levels: map[int]TexData{},
 		target: gl.TEXTURE_2D,
 	}
